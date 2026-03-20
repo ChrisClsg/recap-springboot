@@ -43,6 +43,13 @@ public class TodoService {
     Todo newTodo = new Todo(id, todoData.description(), todoData.status());
 
     todoRepo.save(newTodo);
+    createEvent(
+      TodoEventType.CREATE,
+      id,
+      null,
+      new TodoDto(newTodo.description(), newTodo.status())
+    );
+
     return newTodo;
   }
 
@@ -56,6 +63,15 @@ public class TodoService {
       .withStatus(newData.status());
 
     todoRepo.save(updatedTodo);
+
+    Todo before = todoOpt.get();
+    createEvent(
+      TodoEventType.UPDATE,
+      id,
+      new TodoDto(before.description(), before.status()),
+      new TodoDto(updatedTodo.description(), updatedTodo.status())
+    );
+
     return Optional.ofNullable(updatedTodo);
   }
 
@@ -64,6 +80,15 @@ public class TodoService {
     if (todoOpt.isEmpty()) return false;
 
     todoRepo.deleteById(id);
+
+    Todo before = todoOpt.get();
+    createEvent(
+      TodoEventType.DELETE,
+      id,
+      new TodoDto(before.description(), before.status()),
+      null
+    );
+
     return true;
   }
 
