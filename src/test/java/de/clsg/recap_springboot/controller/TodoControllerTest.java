@@ -54,6 +54,24 @@ public class TodoControllerTest {
   }
 
   @Test
+  void findById_returnsOkAndTodo_whenQueriedTodoExists () throws Exception {
+    Todo todo = validTodo();
+    todoRepo.save(todo);
+
+    mockMvc.perform(get("/api/todo/" + todo.id()))
+      .andExpect(status().isOk())
+      .andExpect(content().json(objectMapper.writeValueAsString(todo)));
+  }
+
+  @Test
+  void findById_returnsNotFound_whenQueriedTodoNotExists () throws Exception {
+    Todo todo = validTodo();
+
+    mockMvc.perform(get("/api/todo/" + todo.id()))
+      .andExpect(status().isNotFound());
+  }
+
+  @Test
   void addTodo_returnsCreatedAndNewTodo_whenCalledWithValidDto () throws Exception {
     TodoDto dto = validDto();
 

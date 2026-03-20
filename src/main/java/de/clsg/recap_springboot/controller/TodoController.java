@@ -12,9 +12,9 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
 
 @RestController
 @RequestMapping("api/todo")
@@ -34,5 +34,12 @@ public class TodoController {
   public ResponseEntity<Todo> addTodo(@RequestBody TodoDto todoData) {
     Todo newTodo = todoService.addTodo(todoData);
     return ResponseEntity.status(HttpStatus.CREATED).body(newTodo);
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<Todo> findById(@PathVariable String id) {
+    return todoService.findById(id)
+      .map(ResponseEntity::ok)
+      .orElseGet(() -> ResponseEntity.notFound().build());
   }
 }

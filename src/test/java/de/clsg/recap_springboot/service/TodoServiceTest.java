@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,16 @@ public class TodoServiceTest {
 
     assertEquals(List.of(todo), todoService.findAll());
     verify(todoRepo).findAll();
+    verifyNoMoreInteractions(todoRepo);
+  }
+
+  @Test
+  void findById_returnsRepoFindById_whenCalled() {
+    Todo todo = validTodo();
+    when(todoRepo.findById(todo.id())).thenReturn(Optional.ofNullable(todo));
+
+    assertEquals(Optional.ofNullable(todo), todoService.findById(todo.id()));
+    verify(todoRepo).findById(todo.id());
     verifyNoMoreInteractions(todoRepo);
   }
 

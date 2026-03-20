@@ -3,6 +3,7 @@ package de.clsg.recap_springboot.service;
 import de.clsg.recap_springboot.dto.TodoDto;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,10 @@ public class TodoService {
 
   public List<Todo> findAll() {
     return todoRepo.findAll();
+  }
+
+  public Optional<Todo> findById(String id) {
+    return todoRepo.findById(id);
   }
 
   public Todo addTodo(TodoDto todoData) {
