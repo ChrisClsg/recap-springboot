@@ -32,7 +32,7 @@ public class TodoServiceTest {
   }
 
   private TodoDto validDto() {
-    return new TodoDto("Some description", TodoStatus.OPEN);
+    return new TodoDto("Some Dto description", TodoStatus.DONE);
   }
 
   @Test
@@ -70,5 +70,30 @@ public class TodoServiceTest {
     verify(idService).randomId();
     verify(todoRepo).save(expectedTodo);
     verifyNoMoreInteractions(idService, todoRepo);
+  }
+
+  @Test
+  void updatedTodo_returnsEmptyOptional_whenGivenTodoIdNotExists() {
+    TodoDto dto = validDto();
+    when(todoRepo.findById("does not exist")).thenReturn(Optional.empty());
+
+    assertEquals(Optional.empty(), todoService.updateTodo("does not exist", dto));
+    verify(todoRepo).findById("does not exist");
+    verifyNoMoreInteractions(todoRepo);
+  }
+
+  @Test
+  void updatedTodo_returnsOptionalWithUpdatedTodo_whenGivenValidTodoAndDto() {
+    Todo todo = validTodo();
+    TodoDto dto = validDto();
+    Todo expectedTodo = todo
+      .withDescription(dto.description())
+      .withStatus(dto.status());
+    when(todoRepo.findById(todo.id())).thenReturn(Optional.ofNullable(todo));
+
+    assertEquals(Optional.ofNullable(expectedTodo), todoService.updateTodo(todo.id(), dto));
+    verify(todoRepo).findById(todo.id());
+    verify(todoRepo).save(expectedTodo);
+    verifyNoMoreInteractions(todoRepo);
   }
 }

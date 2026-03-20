@@ -35,4 +35,17 @@ public class TodoService {
     todoRepo.save(newTodo);
     return newTodo;
   }
+
+  public Optional<Todo> updateTodo(String id, TodoDto newData) {
+    Optional<Todo> todoOpt = todoRepo.findById(id);
+    if (todoOpt.isEmpty()) return todoOpt;
+
+    Todo updatedTodo = todoOpt
+      .get()
+      .withDescription(newData.description())
+      .withStatus(newData.status());
+
+    todoRepo.save(updatedTodo);
+    return Optional.ofNullable(updatedTodo);
+  }
 }

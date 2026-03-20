@@ -84,4 +84,36 @@ public class TodoControllerTest {
       .andExpect(content().json(objectMapper.writeValueAsString(dto)))
       .andExpect(jsonPath("$.id").isNotEmpty());
   }
+
+  @Test
+  void updateTodo_returnsOkAndUpdatedTodo_whenCalledWithValidDtoAndQueriedTodoExists () throws Exception {
+    Todo todo = validTodo();
+    TodoDto dto = validDto();
+    todoRepo.save(todo);
+
+    Todo expectedTodo = todo
+      .withDescription(dto.description())
+      .withStatus(dto.status());
+
+    mockMvc.perform(
+      put("/api/todo/" + todo.id())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(dto))
+    )
+      .andExpect(status().isOk())
+      .andExpect(content().json(objectMapper.writeValueAsString(expectedTodo)));
+  }
+
+  @Test
+  void updateTodo_returnsNotFound_whenQueriedTodoNotExists () throws Exception {
+    Todo todo = validTodo();
+    TodoDto dto = validDto();
+
+    mockMvc.perform(
+      put("/api/todo/" + todo.id())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(dto))
+    )
+      .andExpect(status().isNotFound());
+  }
 }
