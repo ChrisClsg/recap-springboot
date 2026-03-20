@@ -13,12 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import de.clsg.recap_springboot.dto.TodoDto;
 import de.clsg.recap_springboot.enums.TodoStatus;
 import de.clsg.recap_springboot.model.Todo;
 import de.clsg.recap_springboot.repository.TodoRepo;
 
 @ExtendWith(MockitoExtension.class)
 public class TodoServiceTest {
+  @Mock IdService idService;
   @Mock TodoRepo todoRepo;
   @InjectMocks private TodoService todoService;
 
@@ -26,6 +28,10 @@ public class TodoServiceTest {
     return new Todo(
       "1", "Some description", TodoStatus.OPEN
     );
+  }
+
+  private TodoDto validDto() {
+    return new TodoDto("Some description", TodoStatus.OPEN);
   }
 
   @Test
@@ -36,5 +42,22 @@ public class TodoServiceTest {
     assertEquals(List.of(todo), todoService.findAll());
     verify(todoRepo).findAll();
     verifyNoMoreInteractions(todoRepo);
+  }
+
+  @Test
+  void addTodo_returnsSavedTodo_whenCalledWithValidDto() {
+    TodoDto dto = validDto();
+    String expectedId = "some-id";
+    when(idService.randomId()).thenReturn(expectedId);
+    Todo expectedTodo = Todo.builder()
+      .description(dto.description())
+      .status(dto.status())
+      .id(expectedId)
+      .build();
+
+    assertEquals(expectedTodo, todoService.addTodo(dto));
+    verify(idService).randomId();
+    verify(todoRepo).save(expectedTodo);
+    verifyNoMoreInteractions(idService, todoRepo);
   }
 }

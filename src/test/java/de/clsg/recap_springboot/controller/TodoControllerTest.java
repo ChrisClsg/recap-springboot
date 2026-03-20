@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
+import de.clsg.recap_springboot.dto.TodoDto;
 import de.clsg.recap_springboot.enums.TodoStatus;
 import de.clsg.recap_springboot.model.Todo;
 import de.clsg.recap_springboot.repository.TodoRepo;
@@ -30,6 +32,10 @@ public class TodoControllerTest {
     );
   }
 
+  private TodoDto validDto() {
+    return new TodoDto("Some Dto description", TodoStatus.DONE);
+  }
+
   @Test
   void findAll_returnsOkAndEmptyList_whenNoTodoInDb () throws Exception {
     mockMvc.perform(get("/api/todo"))
@@ -45,5 +51,19 @@ public class TodoControllerTest {
     mockMvc.perform(get("/api/todo"))
       .andExpect(status().isOk())
       .andExpect(content().json(objectMapper.writeValueAsString(expectedTodos)));
+  }
+
+  @Test
+  void addTodo_returnsCreatedAndNewTodo_whenCalledWithValidDto () throws Exception {
+    TodoDto dto = validDto();
+
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(dto))
+    )
+      .andExpect(status().isCreated())
+      .andExpect(content().json(objectMapper.writeValueAsString(dto)))
+      .andExpect(jsonPath("$.id").isNotEmpty());
   }
 }
