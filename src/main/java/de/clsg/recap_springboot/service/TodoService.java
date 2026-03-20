@@ -1,22 +1,32 @@
 package de.clsg.recap_springboot.service;
 
 import de.clsg.recap_springboot.dto.TodoDto;
+import de.clsg.recap_springboot.enums.TodoEventType;
 
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import de.clsg.recap_springboot.model.HistoryState;
 import de.clsg.recap_springboot.model.Todo;
+import de.clsg.recap_springboot.model.TodoEvent;
+import de.clsg.recap_springboot.repository.HistoryStateRepo;
+import de.clsg.recap_springboot.repository.TodoEventRepo;
 import de.clsg.recap_springboot.repository.TodoRepo;
 
 @Service
 public class TodoService {
+  private final HistoryStateRepo historyStateRepo;
   private final IdService idService;
+  private final TodoEventRepo eventRepo;
   private final TodoRepo todoRepo;
 
-  public TodoService(IdService idService, TodoRepo todoRepo) {
+  public TodoService(HistoryStateRepo historyStateRepo, IdService idService, TodoEventRepo eventRepo,
+      TodoRepo todoRepo) {
+    this.historyStateRepo = historyStateRepo;
     this.idService = idService;
+    this.eventRepo = eventRepo;
     this.todoRepo = todoRepo;
   }
 
@@ -55,5 +65,28 @@ public class TodoService {
 
     todoRepo.deleteById(id);
     return true;
+  }
+
+  private void createEvent(TodoEventType type, String todoId, TodoDto before, TodoDto after) {
+    HistoryState state = getOrCreateHistoryState();
+
+    eventRepo.deleteBySequenceGreaterThan(state.currentSequence());
+
+    TodoEvent event = TodoEvent.builder()
+      .id(idService.randomId())
+      .sequence(state.currentSequence() + 1)
+      .todoId(todoId)
+      .after(after)
+      .before(before)
+      .type(type)
+      .build();
+
+    eventRepo.save(event);
+    historyStateRepo.save(state.withCurrentSequence(state.currentSequence() + 1));
+  }
+
+  private HistoryState getOrCreateHistoryState() {
+    return historyStateRepo.findById("global")
+        .orElseGet(() -> historyStateRepo.save(new HistoryState("global", 0)));
   }
 }

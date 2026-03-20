@@ -7,5 +7,5 @@ import de.clsg.recap_springboot.model.TodoEvent;
 
 @Repository
 public interface TodoEventRepo extends MongoRepository<TodoEvent, String> {
-
+  void deleteBySequenceGreaterThan(int sequence);
 }
