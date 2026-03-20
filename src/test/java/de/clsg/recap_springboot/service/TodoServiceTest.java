@@ -1,6 +1,6 @@
 package de.clsg.recap_springboot.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -94,6 +94,26 @@ public class TodoServiceTest {
     assertEquals(Optional.ofNullable(expectedTodo), todoService.updateTodo(todo.id(), dto));
     verify(todoRepo).findById(todo.id());
     verify(todoRepo).save(expectedTodo);
+    verifyNoMoreInteractions(todoRepo);
+  }
+
+  @Test
+  void deleteTodo_returnsFalse_whenGivenNonExistentId() {
+    when(todoRepo.findById("does not exist")).thenReturn(Optional.empty());
+
+    assertFalse(todoService.deleteTodo("does not exist"));
+    verify(todoRepo).findById("does not exist");
+    verifyNoMoreInteractions(todoRepo);
+  }
+
+  @Test
+  void deleteTodo_deletesTodoAndReturnsTrue_whenGivenExistingId() {
+    Todo todo = validTodo();
+    when(todoRepo.findById(todo.id())).thenReturn(Optional.ofNullable(todo));
+
+    assertTrue(todoService.deleteTodo(todo.id()));
+    verify(todoRepo).findById(todo.id());
+    verify(todoRepo).deleteById(todo.id());
     verifyNoMoreInteractions(todoRepo);
   }
 }

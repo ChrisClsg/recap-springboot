@@ -116,4 +116,21 @@ public class TodoControllerTest {
     )
       .andExpect(status().isNotFound());
   }
+
+  @Test
+  void deleteTodo_returnsNoContent_whenCalledWithExistingId () throws Exception {
+    Todo todo = validTodo();
+    todoRepo.save(todo);
+
+    mockMvc.perform(delete("/api/todo/" + todo.id())    )
+      .andExpect(status().isNoContent());
+  }
+
+  @Test
+  void deleteTodo_returnsNotFound_whenCalledWithNonExistentId () throws Exception {
+    Todo todo = validTodo();
+
+    mockMvc.perform(delete("/api/todo/" + todo.id()))
+      .andExpect(status().isNotFound());
+  }
 }

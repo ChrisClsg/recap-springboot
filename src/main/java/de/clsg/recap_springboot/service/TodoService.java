@@ -48,4 +48,12 @@ public class TodoService {
     todoRepo.save(updatedTodo);
     return Optional.ofNullable(updatedTodo);
   }
+
+  public boolean deleteTodo(String id) {
+    Optional<Todo> todoOpt = todoRepo.findById(id);
+    if (todoOpt.isEmpty()) return false;
+
+    todoRepo.deleteById(id);
+    return true;
+  }
 }
