@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import de.clsg.recap_springboot.dto.TodoDto;
 import de.clsg.recap_springboot.model.Todo;
 import de.clsg.recap_springboot.service.TodoService;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class TodoController {
   }
 
   @PostMapping()
-  public ResponseEntity<Todo> addTodo(@RequestBody TodoDto todoData) {
+  public ResponseEntity<Todo> addTodo(@RequestBody @Valid TodoDto todoData) {
     Todo newTodo = todoService.addTodo(todoData);
     return ResponseEntity.status(HttpStatus.CREATED).body(newTodo);
   }
@@ -46,7 +47,7 @@ public class TodoController {
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Todo> updateTodo(@PathVariable String id, @RequestBody TodoDto newData) {
+  public ResponseEntity<Todo> updateTodo(@PathVariable String id, @RequestBody @Valid TodoDto newData) {
     return todoService.updateTodo(id, newData)
       .map(ResponseEntity::ok)
       .orElseGet(() -> ResponseEntity.notFound().build());

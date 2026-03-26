@@ -196,4 +196,80 @@ public class TodoControllerTest {
       .andExpect(jsonPath("$.description").value(dto.description()))
       .andExpect(jsonPath("$.status").value(dto.status().toString()));
   }
+
+  @Test
+  void addTodo_returnsBadRequest_whenDescriptionIsEmpty() throws Exception {
+    TodoDto invalidDto = new TodoDto("", TodoStatus.OPEN);
+
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(invalidDto))
+    )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void addTodo_returnsBadRequest_whenDescriptionIsNull() throws Exception {
+    String jsonPayload = "{\"description\": null, \"status\": \"OPEN\"}";
+
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonPayload)
+    )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void addTodo_returnsBadRequest_whenStatusIsNull() throws Exception {
+    TodoDto invalidDto = new TodoDto("Some description", null);
+
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(invalidDto))
+    )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void addTodo_returnsBadRequest_whenBothFieldsAreInvalid() throws Exception {
+    String jsonPayload = "{\"description\": \"\", \"status\": null}";
+
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonPayload)
+    )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void updateTodo_returnsBadRequest_whenDescriptionIsEmpty() throws Exception {
+    Todo todo = validTodo();
+    TodoDto invalidDto = new TodoDto("", TodoStatus.DONE);
+    todoRepo.save(todo);
+
+    mockMvc.perform(
+      put("/api/todo/" + todo.id())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(invalidDto))
+    )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void updateTodo_returnsBadRequest_whenStatusIsNull() throws Exception {
+    Todo todo = validTodo();
+    TodoDto invalidDto = new TodoDto("Valid description", null);
+    todoRepo.save(todo);
+
+    mockMvc.perform(
+      put("/api/todo/" + todo.id())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(invalidDto))
+    )
+      .andExpect(status().isBadRequest());
+  }
 }
