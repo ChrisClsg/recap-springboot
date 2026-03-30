@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
-
 import de.clsg.recap_springboot.model.HistoryState;
 import de.clsg.recap_springboot.model.Todo;
 import de.clsg.recap_springboot.model.TodoEvent;
@@ -21,13 +20,20 @@ public class TodoService {
   private final IdService idService;
   private final TodoEventRepo eventRepo;
   private final TodoRepo todoRepo;
+  private final SpellingService spellingService;
 
-  public TodoService(HistoryStateRepo historyStateRepo, IdService idService, TodoEventRepo eventRepo,
-      TodoRepo todoRepo) {
+  public TodoService(
+    HistoryStateRepo historyStateRepo,
+    IdService idService,
+    TodoEventRepo eventRepo,
+    TodoRepo todoRepo,
+    SpellingService spellingService
+  ) {
     this.historyStateRepo = historyStateRepo;
     this.idService = idService;
     this.eventRepo = eventRepo;
     this.todoRepo = todoRepo;
+    this.spellingService = spellingService;
   }
 
   public List<Todo> findAll() {
