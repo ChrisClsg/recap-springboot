@@ -161,4 +161,39 @@ public class TodoControllerTest {
       .andExpect(status().isOk())
       .andExpect(content().json("[]"));
   }
+
+  @Test
+  void redoEvent_returnsNotFound_whenNoEventsToRedo() throws Exception {
+    mockMvc.perform(post("/api/todo/redo"))
+      .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void redoEvent_reappliesLastAction_afterUndo() throws Exception {
+    TodoDto dto = validDto();
+
+    // Create a todo
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(dto))
+    )
+      .andExpect(status().isCreated())
+      .andReturn();
+
+    // Undo the creation
+    mockMvc.perform(post("/api/todo/undo"))
+      .andExpect(status().isNotFound());
+
+    // Verify todo is deleted
+    mockMvc.perform(get("/api/todo"))
+      .andExpect(status().isOk())
+      .andExpect(content().json("[]"));
+
+    // Redo - should restore the todo
+    mockMvc.perform(post("/api/todo/redo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.description").value(dto.description()))
+      .andExpect(jsonPath("$.status").value(dto.status().toString()));
+  }
 }

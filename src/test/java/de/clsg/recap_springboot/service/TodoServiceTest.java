@@ -294,4 +294,104 @@ public class TodoServiceTest {
     verify(historyStateRepo).save(new HistoryState("global", currentSequence - 1));
     verifyNoMoreInteractions(todoRepo, historyStateRepo);
   }
+
+  @Test
+  void redoEvent_returnsEmpty_whenNoMoreEventsToRedo() {
+    int currentSequence = 1;
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence + 1)).thenReturn(Optional.empty());
+
+    assertEquals(Optional.empty(), todoService.redoEvent());
+    verify(historyStateRepo).findById("global");
+    verify(eventRepo).findBySequence(currentSequence + 1);
+    verifyNoMoreInteractions(historyStateRepo, eventRepo);
+    verifyNoInteractions(todoRepo);
+  }
+
+  @Test
+  void redoEvent_restoresTodo_whenRedoingCreateEvent() {
+    Todo todo = validTodo();
+    TodoDto todoDto = new TodoDto(todo.description(), todo.status());
+    int currentSequence = 0;
+
+    TodoEvent createEvent = new TodoEvent(
+      "event-1",
+      currentSequence + 1,
+      todo.id(),
+      todoDto,
+      null,
+      TodoEventType.CREATE
+    );
+
+    Todo restoredTodo = new Todo(todo.id(), todoDto.description(), todoDto.status());
+
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence + 1)).thenReturn(Optional.of(createEvent));
+    when(todoRepo.save(restoredTodo)).thenReturn(restoredTodo);
+
+    assertEquals(Optional.of(restoredTodo), todoService.redoEvent());
+    verify(todoRepo).save(restoredTodo);
+    verify(historyStateRepo).findById("global");
+    verify(historyStateRepo).save(new HistoryState("global", currentSequence + 1));
+    verifyNoMoreInteractions(todoRepo, historyStateRepo);
+  }
+
+  @Test
+  void redoEvent_deletesTodo_whenRedoingDeleteEvent() {
+    String todoId = "1";
+    Todo todo = validTodo();
+    TodoDto todoDto = new TodoDto(todo.description(), todo.status());
+    int currentSequence = 1;
+
+    TodoEvent deleteEvent = new TodoEvent(
+      "event-2",
+      currentSequence + 1,
+      todoId,
+      null,
+      todoDto,
+      TodoEventType.DELETE
+    );
+
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence + 1)).thenReturn(Optional.of(deleteEvent));
+    when(todoRepo.findById(todo.id())).thenReturn(Optional.of(todo));
+
+    assertEquals(Optional.empty(), todoService.redoEvent());
+    verify(todoRepo).findById(todoId);
+    verify(todoRepo).deleteById(todoId);
+    verify(historyStateRepo).findById("global");
+    verify(historyStateRepo).save(new HistoryState("global", currentSequence + 1));
+    verifyNoMoreInteractions(todoRepo, historyStateRepo);
+  }
+
+  @Test
+  void redoEvent_appliesNewState_whenRedoingUpdateEvent() {
+    String todoId = "1";
+    Todo afterTodo = new Todo(todoId, "New description", TodoStatus.DONE);
+    Todo beforeTodo = new Todo(todoId, "Old description", TodoStatus.OPEN);
+    TodoDto afterDto = new TodoDto(afterTodo.description(), afterTodo.status());
+    TodoDto beforeDto = new TodoDto(beforeTodo.description(), beforeTodo.status());
+    int currentSequence = 2;
+
+    TodoEvent updateEvent = new TodoEvent(
+      "event-3",
+      currentSequence + 1,
+      todoId,
+      afterDto,
+      beforeDto,
+      TodoEventType.UPDATE
+    );
+
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence + 1)).thenReturn(Optional.of(updateEvent));
+    when(todoRepo.findById(todoId)).thenReturn(Optional.of(beforeTodo));
+    when(todoRepo.save(afterTodo)).thenReturn(afterTodo);
+
+    assertEquals(Optional.of(afterTodo), todoService.redoEvent());
+    verify(todoRepo).findById(todoId);
+    verify(todoRepo).save(afterTodo);
+    verify(historyStateRepo).findById("global");
+    verify(historyStateRepo).save(new HistoryState("global", currentSequence + 1));
+    verifyNoMoreInteractions(todoRepo, historyStateRepo);
+  }
 }

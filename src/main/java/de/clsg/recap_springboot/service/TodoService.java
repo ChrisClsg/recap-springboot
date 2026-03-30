@@ -145,6 +145,36 @@ public class TodoService {
       return Optional.of(updatedTodo);
   }
 
+  public Optional<Todo> redoEvent() {
+    HistoryState state = getOrCreateHistoryState();
+
+    Optional<TodoEvent> eventOpt = eventRepo.findBySequence(state.currentSequence() + 1);
+    if (eventOpt.isEmpty()) {
+        return Optional.empty();
+    }
+
+    TodoEvent event = eventOpt.get();
+    Optional<Todo> result;
+
+    switch (event.type()) {
+        case CREATE:
+            result = restoreTodo(event.todoId(), event.after());
+            break;
+        case DELETE:
+            deleteTodoWithoutEvent(event.todoId());
+            result = Optional.empty();
+            break;
+        case UPDATE:
+            result = updateTodoWithoutEvent(event.todoId(), event.after());
+            break;
+        default:
+            throw new IllegalStateException("Unexpected value: " + event.type());
+    }
+
+    historyStateRepo.save(state.withCurrentSequence(state.currentSequence() + 1));
+    return result;
+  }
+
   private boolean deleteTodoWithoutEvent(String id) {
       Optional<Todo> todoOpt = todoRepo.findById(id);
       if (todoOpt.isEmpty()) {

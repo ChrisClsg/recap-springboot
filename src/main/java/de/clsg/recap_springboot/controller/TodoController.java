@@ -65,4 +65,11 @@ public class TodoController {
           .map(ResponseEntity::ok)
           .orElseGet(() -> ResponseEntity.notFound().build());
   }
+
+  @PostMapping("/redo")
+  public ResponseEntity<Todo> redoEvent() {
+      return todoService.redoEvent()
+          .map(ResponseEntity::ok)
+          .orElseGet(() -> ResponseEntity.notFound().build());
+  }
 }
