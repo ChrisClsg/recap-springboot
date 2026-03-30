@@ -68,7 +68,7 @@ public class TodoService {
 
     Todo updatedTodo = todoOpt
       .get()
-      .withDescription(newData.description())
+      .withDescription(spellingService.checkSpelling(newData.description()))
       .withStatus(newData.status());
 
     todoRepo.save(updatedTodo);

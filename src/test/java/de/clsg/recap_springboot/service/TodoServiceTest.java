@@ -126,13 +126,15 @@ public class TodoServiceTest {
     int currentSequence = 1;
     int expectedSequence = 2;
     when(todoRepo.findById(todo.id())).thenReturn(Optional.ofNullable(todo));
+    when(spellingService.checkSpelling(dto.description())).thenReturn(dto.description());
     when(idService.randomId()).thenReturn("event-123");
     when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", 1)));
 
     assertEquals(Optional.ofNullable(expectedTodo), todoService.updateTodo(todo.id(), dto));
     verify(todoRepo).findById(todo.id());
+    verify(spellingService).checkSpelling(dto.description());
     verify(todoRepo).save(expectedTodo);
-    verifyNoMoreInteractions(todoRepo);
+    verifyNoMoreInteractions(todoRepo, spellingService);
 
     verify(eventRepo).save(new TodoEvent(
       "event-123",
