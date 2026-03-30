@@ -46,7 +46,10 @@ public class TodoService {
 
   public Todo addTodo(TodoDto todoData) {
     String id = idService.randomId();
-    Todo newTodo = new Todo(id, todoData.description(), todoData.status());
+
+    String checkedDescription = spellingService.checkSpelling(todoData.description());
+
+    Todo newTodo = new Todo(id, checkedDescription, todoData.status());
 
     todoRepo.save(newTodo);
     createEvent(

@@ -32,6 +32,7 @@ public class TodoServiceTest {
   @Mock IdService idService;
   @Mock TodoEventRepo eventRepo;
   @Mock TodoRepo todoRepo;
+  @Mock SpellingService spellingService;
   @InjectMocks private TodoService todoService;
 
   private Todo validTodo() {
@@ -71,6 +72,7 @@ public class TodoServiceTest {
     int currentSequence = 1;
     int expectedSequence = 2;
     when(idService.randomId()).thenReturn(expectedId);
+    when(spellingService.checkSpelling(dto.description())).thenReturn(dto.description());
     when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
 
     Todo expectedTodo = Todo.builder()
@@ -81,8 +83,9 @@ public class TodoServiceTest {
 
     assertEquals(expectedTodo, todoService.addTodo(dto));
     verify(idService, times(2)).randomId();
+    verify(spellingService).checkSpelling(dto.description());
     verify(todoRepo).save(expectedTodo);
-    verifyNoMoreInteractions(idService, todoRepo);
+    verifyNoMoreInteractions(idService, todoRepo, spellingService);
 
     verify(eventRepo).save(new TodoEvent(
       "some-id",
