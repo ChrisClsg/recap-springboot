@@ -92,6 +92,69 @@ public class TodoService {
     return true;
   }
 
+  public Optional<Todo> undoEvent() {
+    HistoryState state = getOrCreateHistoryState();
+
+    if (state.currentSequence() == 0) {
+        return Optional.empty();
+    }
+
+    Optional<TodoEvent> eventOpt = eventRepo.findBySequence(state.currentSequence());
+    if (eventOpt.isEmpty()) {
+        return Optional.empty();
+    }
+
+    TodoEvent event = eventOpt.get();
+    Optional<Todo> result;
+
+    switch (event.type()) {
+        case CREATE:
+            deleteTodoWithoutEvent(event.todoId());
+            result = Optional.empty();
+            break;
+        case DELETE:
+            result = restoreTodo(event.todoId(), event.before());
+            break;
+        case UPDATE:
+            result = updateTodoWithoutEvent(event.todoId(), event.before());
+            break;
+        default:
+            throw new IllegalStateException("Unexpected value: " + event.type());
+    }
+
+    historyStateRepo.save(state.withCurrentSequence(state.currentSequence() - 1));
+    return result;
+  }
+
+  private Optional<Todo> restoreTodo(String id, TodoDto dto) {
+      Todo todo = new Todo(id, dto.description(), dto.status());
+      return Optional.of(todoRepo.save(todo));
+  }
+
+  private Optional<Todo> updateTodoWithoutEvent(String id, TodoDto dto) {
+      Optional<Todo> todoOpt = todoRepo.findById(id);
+      if (todoOpt.isEmpty()) {
+          return Optional.empty();
+      }
+
+      Todo updatedTodo = todoOpt.get()
+          .withDescription(dto.description())
+          .withStatus(dto.status());
+
+      todoRepo.save(updatedTodo);
+      return Optional.of(updatedTodo);
+  }
+
+  private boolean deleteTodoWithoutEvent(String id) {
+      Optional<Todo> todoOpt = todoRepo.findById(id);
+      if (todoOpt.isEmpty()) {
+          return false;
+      }
+
+      todoRepo.deleteById(id);
+      return true;
+  }
+
   private void createEvent(TodoEventType type, String todoId, TodoDto before, TodoDto after) {
     HistoryState state = getOrCreateHistoryState();
 

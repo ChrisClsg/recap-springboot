@@ -133,4 +133,32 @@ public class TodoControllerTest {
     mockMvc.perform(delete("/api/todo/" + todo.id()))
       .andExpect(status().isNotFound());
   }
+
+  @Test
+  void undoEvent_returnsNotFound_whenNoEventsToUndo() throws Exception {
+    mockMvc.perform(post("/api/todo/undo"))
+      .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void undoEvent_revertsLastAction_whenEventExists() throws Exception {
+    TodoDto dto = validDto();
+
+    // Create a todo
+    mockMvc.perform(
+      post("/api/todo")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(dto))
+    )
+      .andExpect(status().isCreated());
+
+    // Undo the creation
+    mockMvc.perform(post("/api/todo/undo"))
+      .andExpect(status().isNotFound());
+
+    // Verify todo is gone
+    mockMvc.perform(get("/api/todo"))
+      .andExpect(status().isOk())
+      .andExpect(content().json("[]"));
+  }
 }

@@ -58,4 +58,11 @@ public class TodoController {
     if (success) return ResponseEntity.noContent().build();
     else return ResponseEntity.notFound().build();
   }
+
+  @PostMapping("/undo")
+  public ResponseEntity<Todo> undoEvent() {
+      return todoService.undoEvent()
+          .map(ResponseEntity::ok)
+          .orElseGet(() -> ResponseEntity.notFound().build());
+  }
 }

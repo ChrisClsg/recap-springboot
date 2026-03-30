@@ -189,4 +189,109 @@ public class TodoServiceTest {
     verify(historyStateRepo).save(new HistoryState("global", expectedSequence));
     verifyNoMoreInteractions(historyStateRepo);
   }
+
+  @Test
+  void undoEvent_returnsEmpty_whenCurrentSequenceIsZero() {
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", 0)));
+
+    assertEquals(Optional.empty(), todoService.undoEvent());
+    verify(historyStateRepo).findById("global");
+    verifyNoMoreInteractions(historyStateRepo);
+    verifyNoInteractions(eventRepo, todoRepo);
+  }
+
+  @Test
+  void undoEvent_returnsEmpty_whenEventNotFound() {
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", 1)));
+    when(eventRepo.findBySequence(1)).thenReturn(Optional.empty());
+
+    assertEquals(Optional.empty(), todoService.undoEvent());
+    verify(historyStateRepo).findById("global");
+    verify(eventRepo).findBySequence(1);
+    verifyNoMoreInteractions(historyStateRepo, eventRepo);
+    verifyNoInteractions(todoRepo);
+  }
+
+  @Test
+  void undoEvent_deletesTodo_whenUndoingCreateEvent() {
+    String todoId = "1";
+    Todo todo = validTodo();
+    int currentSequence = 1;
+    TodoEvent createEvent = new TodoEvent(
+      "event-1",
+      currentSequence,
+      todoId,
+      new TodoDto(todo.description(), todo.status()),
+      null,
+      TodoEventType.CREATE
+    );
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence)).thenReturn(Optional.of(createEvent));
+    when(todoRepo.findById(todo.id())).thenReturn(Optional.of(todo));
+
+    assertEquals(Optional.empty(), todoService.undoEvent());
+    verify(todoRepo).findById(todoId);
+    verify(todoRepo).deleteById(todoId);
+    verify(historyStateRepo).findById("global");
+    verify(historyStateRepo).save(new HistoryState("global", currentSequence - 1));
+    verifyNoMoreInteractions(todoRepo, historyStateRepo);
+  }
+
+  @Test
+  void undoEvent_restoresTodo_whenUndoingDeleteEvent() {
+    String todoId = "1";
+    Todo originalTodo = validTodo();
+    TodoDto todoDto = new TodoDto(originalTodo.description(), originalTodo.status());
+    int currentSequence = 2;
+    TodoEvent deleteEvent = new TodoEvent(
+      "event-2",
+      currentSequence,
+      todoId,
+      null,
+      todoDto,
+      TodoEventType.DELETE
+    );
+    Todo restoredTodo = new Todo(todoId, todoDto.description(), todoDto.status());
+
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence)).thenReturn(Optional.of(deleteEvent));
+    when(todoRepo.save(restoredTodo)).thenReturn(restoredTodo);
+
+    assertEquals(Optional.of(restoredTodo), todoService.undoEvent());
+    verify(todoRepo).save(restoredTodo);
+    verify(historyStateRepo).findById("global");
+    verify(historyStateRepo).save(new HistoryState("global", currentSequence - 1));
+    verifyNoMoreInteractions(todoRepo, historyStateRepo);
+  }
+
+  @Test
+  void undoEvent_revertsToOldState_whenUndoingUpdateEvent() {
+    String todoId = "1";
+    Todo afterTodo = new Todo(todoId, "New description", TodoStatus.DONE);
+    Todo beforeTodo = new Todo(todoId, "Old description", TodoStatus.OPEN);
+    TodoDto afterDto = new TodoDto(afterTodo.description(), afterTodo.status());
+    TodoDto beforeDto = new TodoDto(beforeTodo.description(), beforeTodo.status());
+    int currentSequence = 3;
+
+    TodoEvent updateEvent = new TodoEvent(
+      "event-3",
+      currentSequence,
+      todoId,
+      afterDto,
+      beforeDto,
+      TodoEventType.UPDATE
+    );
+
+    when(historyStateRepo.findById("global")).thenReturn(Optional.of(new HistoryState("global", currentSequence)));
+    when(eventRepo.findBySequence(currentSequence)).thenReturn(Optional.of(updateEvent));
+    when(todoRepo.findById(todoId)).thenReturn(Optional.of(afterTodo));
+    when(todoRepo.save(beforeTodo)).thenReturn(beforeTodo);
+
+    assertEquals(Optional.of(beforeTodo), todoService.undoEvent());
+    verify(todoRepo).findById(todoId);
+    verify(todoRepo).save(beforeTodo);
+    verify(historyStateRepo).findById("global");
+    verify(historyStateRepo).save(new HistoryState("global", currentSequence - 1));
+    verifyNoMoreInteractions(todoRepo, historyStateRepo);
+  }
 }
