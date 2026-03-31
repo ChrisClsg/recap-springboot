@@ -1,12 +1,17 @@
 package de.clsg.recap_springboot.controller;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -16,6 +21,7 @@ import de.clsg.recap_springboot.dto.TodoDto;
 import de.clsg.recap_springboot.enums.TodoStatus;
 import de.clsg.recap_springboot.model.Todo;
 import de.clsg.recap_springboot.repository.TodoRepo;
+import de.clsg.recap_springboot.service.SpellingService;
 import tools.jackson.databind.ObjectMapper;
 
 @AutoConfigureMockMvc
@@ -25,6 +31,12 @@ public class TodoControllerTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private TodoRepo todoRepo;
+  @MockitoBean SpellingService spellingService;
+
+  @BeforeEach
+  void setUp() {
+    when(spellingService.checkSpelling(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+  }
 
   private Todo validTodo() {
     return new Todo(
